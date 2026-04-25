@@ -1,0 +1,1968 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tiến Lên — Bảng điểm</title>
+  <style>
+/* style.css — Tiến Lên Score Tracker — mobile-first */
+
+/* ─── Reset & Variables ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --red:       #c0392b;
+  --red-dark:  #962d22;
+  --red-light: #f5e6e5;
+  --yellow:    #f1c40f;
+  --yellow-bg: #fef9e7;
+  --green:     #27ae60;
+  --green-bg:  #eafaf1;
+  --grey-50:   #f8f9fa;
+  --grey-100:  #f1f3f4;
+  --grey-200:  #e8eaed;
+  --grey-400:  #bdc1c6;
+  --grey-600:  #80868b;
+  --grey-800:  #3c4043;
+  --grey-900:  #202124;
+  --white:     #ffffff;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.12);
+  --radius:    12px;
+  --radius-sm: 8px;
+  --tap:       44px;
+  --font:      -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--grey-50);
+  color: var(--grey-900);
+  line-height: 1.5;
+  min-height: 100dvh;
+}
+
+/* ─── Layout ─────────────────────────────────────────────────────── */
+#app { display: flex; flex-direction: column; min-height: 100dvh; }
+
+.screen { display: none; flex: 1; flex-direction: column; }
+.screen.active { display: flex; }
+
+.container { width: 100%; max-width: 600px; margin: 0 auto; padding: 0 16px; }
+
+/* ─── Header ─────────────────────────────────────────────────────── */
+.app-header {
+  background: var(--red);
+  color: var(--white);
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+.app-header .container {
+  display: flex; align-items: center; gap: 8px;
+  height: 56px;
+}
+.header-title { font-size: 18px; font-weight: 700; flex: 1; }
+.header-back {
+  background: none; border: none; color: var(--white);
+  min-width: var(--tap); min-height: var(--tap);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 50%; font-size: 22px;
+  touch-action: manipulation;
+  margin-left: -8px;
+}
+.header-back:hover { background: rgba(255,255,255,.15); }
+.header-actions { display: flex; gap: 4px; }
+.header-btn {
+  background: none; border: none; color: var(--white);
+  min-width: var(--tap); min-height: var(--tap);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 50%; font-size: 20px;
+  touch-action: manipulation;
+}
+.header-btn:hover { background: rgba(255,255,255,.15); }
+
+/* ─── Buttons ────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: var(--tap); padding: 0 20px;
+  border: none; border-radius: var(--radius-sm);
+  font-family: var(--font); font-size: 15px; font-weight: 600;
+  cursor: pointer; touch-action: manipulation;
+  transition: opacity .15s, transform .1s;
+  text-decoration: none;
+}
+.btn:active { transform: scale(.97); opacity: .9; }
+.btn-primary { background: var(--red); color: var(--white); }
+.btn-primary:hover { background: var(--red-dark); }
+.btn-secondary { background: var(--grey-200); color: var(--grey-900); }
+.btn-secondary:hover { background: var(--grey-400); }
+.btn-ghost { background: none; color: var(--red); }
+.btn-ghost:hover { background: var(--red-light); }
+.btn-danger { background: #fce8e6; color: var(--red); }
+.btn-danger:hover { background: #f5c6c3; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-full { width: 100%; }
+.btn-sm { min-height: 36px; padding: 0 14px; font-size: 14px; }
+
+/* FAB */
+.fab {
+  position: fixed; bottom: 24px; right: 20px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--red); color: var(--white);
+  border: none; font-size: 28px; cursor: pointer;
+  box-shadow: var(--shadow-md);
+  display: flex; align-items: center; justify-content: center;
+  touch-action: manipulation; z-index: 50;
+  transition: transform .15s;
+}
+.fab:active { transform: scale(.93); }
+
+/* ─── Cards ──────────────────────────────────────────────────────── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+}
+.card + .card { margin-top: 12px; }
+
+/* ─── Home screen ────────────────────────────────────────────────── */
+.screen-body { flex: 1; padding: 16px 0 100px; overflow-y: auto; }
+
+.empty-state {
+  text-align: center; padding: 64px 24px;
+  color: var(--grey-600);
+}
+.empty-state .empty-icon { font-size: 56px; margin-bottom: 12px; }
+.empty-state p { font-size: 15px; }
+
+.group-card {
+  background: var(--white); border-radius: var(--radius);
+  box-shadow: var(--shadow-sm); padding: 16px;
+  margin-bottom: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+  touch-action: manipulation;
+  transition: box-shadow .15s;
+}
+.group-card:hover { box-shadow: var(--shadow-md); }
+.group-card-info { flex: 1; min-width: 0; }
+.group-card-name { font-size: 17px; font-weight: 700; }
+.group-card-meta { font-size: 13px; color: var(--grey-600); margin-top: 2px; }
+.group-card-arrow { color: var(--grey-400); font-size: 20px; }
+.group-card-del {
+  background: none; border: none; color: var(--grey-400);
+  min-width: var(--tap); min-height: var(--tap);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 50%; font-size: 18px;
+  touch-action: manipulation;
+}
+.group-card-del:hover { color: var(--red); background: var(--red-light); }
+
+/* ─── Modal ──────────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); z-index: 200;
+  align-items: flex-end; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--white); border-radius: var(--radius) var(--radius) 0 0;
+  padding: 24px 20px 32px; width: 100%; max-width: 600px;
+  max-height: 90dvh; overflow-y: auto;
+}
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.modal-actions .btn { flex: 1; }
+
+/* ─── Form fields ────────────────────────────────────────────────── */
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 13px; font-weight: 600; color: var(--grey-600); margin-bottom: 6px; }
+.field input, .field select {
+  width: 100%; min-height: var(--tap);
+  border: 1.5px solid var(--grey-200); border-radius: var(--radius-sm);
+  padding: 0 12px; font-size: 16px; font-family: var(--font);
+  background: var(--white); color: var(--grey-900);
+  outline: none; touch-action: manipulation;
+}
+.field input:focus, .field select:focus { border-color: var(--red); }
+.player-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ─── Group detail screen ─────────────────────────────────────────── */
+.totals-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+  margin-bottom: 16px;
+}
+.total-card {
+  background: var(--white); border-radius: var(--radius-sm);
+  padding: 10px 8px; text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.total-card.leader { background: var(--yellow-bg); border: 2px solid var(--yellow); }
+.total-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.total-score { font-size: 20px; font-weight: 800; }
+.total-score.pos { color: var(--green); }
+.total-score.neg { color: var(--red); }
+.total-score.zero { color: var(--grey-600); }
+
+/* Rounds list */
+.section-title {
+  font-size: 13px; font-weight: 700; color: var(--grey-600);
+  text-transform: uppercase; letter-spacing: .06em;
+  margin: 20px 0 10px;
+}
+.round-row {
+  background: var(--white); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm); padding: 12px 14px;
+  margin-bottom: 8px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  touch-action: manipulation;
+}
+.round-row:hover { box-shadow: var(--shadow-md); }
+.round-row-info { flex: 1; min-width: 0; }
+.round-type-badge {
+  font-size: 11px; font-weight: 700; border-radius: 4px;
+  padding: 2px 7px; display: inline-block; margin-bottom: 4px;
+}
+.badge-normal { background: var(--grey-100); color: var(--grey-800); }
+.badge-ngop1  { background: #fff3cd; color: #856404; }
+.badge-ngop2  { background: #fde8e8; color: #9b1c1c; }
+.badge-ngop3  { background: #f5c6c3; color: #7b0e0e; }
+.round-scores { font-size: 13px; color: var(--grey-600); }
+.round-score-val { font-weight: 700; }
+.round-score-val.pos { color: var(--green); }
+.round-score-val.neg { color: var(--red); }
+.round-del {
+  background: none; border: none; color: var(--grey-400);
+  min-width: var(--tap); min-height: var(--tap);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; border-radius: 50%; font-size: 18px;
+  touch-action: manipulation;
+}
+.round-del:hover { color: var(--red); background: var(--red-light); }
+.round-number { font-size: 12px; color: var(--grey-400); font-weight: 600; }
+
+/* ─── Stats table ────────────────────────────────────────────────── */
+.stats-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.stats-table th {
+  text-align: left; padding: 8px 6px;
+  font-size: 12px; color: var(--grey-600);
+  border-bottom: 1.5px solid var(--grey-200);
+}
+.stats-table td { padding: 8px 6px; border-bottom: 1px solid var(--grey-100); }
+.stats-table tr.leader td { background: var(--yellow-bg); font-weight: 700; }
+.stats-table td.pos { color: var(--green); font-weight: 700; }
+.stats-table td.neg { color: var(--red); font-weight: 700; }
+.stats-section { overflow-x: auto; }
+
+/* ─── Wizard ─────────────────────────────────────────────────────── */
+.wizard-body { flex: 1; padding: 16px 0 120px; overflow-y: auto; }
+
+.step-indicator {
+  display: flex; gap: 8px; align-items: center;
+  padding: 12px 0 4px;
+}
+.step-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--grey-200);
+  transition: background .2s;
+}
+.step-dot.active { background: var(--red); transform: scale(1.3); }
+.step-dot.done   { background: var(--green); }
+.step-label { font-size: 13px; color: var(--grey-600); margin-left: 4px; }
+
+/* Type selection cards */
+.type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.type-card {
+  background: var(--white); border: 2.5px solid var(--grey-200);
+  border-radius: var(--radius); padding: 20px 12px;
+  text-align: center; cursor: pointer;
+  touch-action: manipulation;
+  transition: border-color .15s, background .15s;
+}
+.type-card:hover { border-color: var(--red); }
+.type-card.selected { border-color: var(--red); background: var(--red-light); }
+.type-card:disabled, .type-card.disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
+.type-card-icon { font-size: 32px; margin-bottom: 8px; }
+.type-card-label { font-size: 14px; font-weight: 700; }
+.type-card-pts { font-size: 12px; color: var(--grey-600); margin-top: 4px; }
+
+/* Rank assignment */
+.rank-section { margin-top: 16px; }
+.rank-label { font-size: 13px; font-weight: 700; color: var(--grey-600); margin-bottom: 8px; }
+.rank-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.rank-badge {
+  min-width: 64px; text-align: center;
+  font-size: 13px; font-weight: 700; padding: 6px 8px;
+  border-radius: var(--radius-sm);
+}
+.rank-0 { background: var(--yellow-bg); color: #7d6608; }
+.rank-1 { background: var(--grey-100); color: var(--grey-800); }
+.rank-2 { background: #fff0f0; color: #9b1c1c; }
+.rank-3 { background: var(--red-light); color: var(--red); }
+.player-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.player-chip {
+  min-height: var(--tap); padding: 0 14px;
+  border: 2px solid var(--grey-200); border-radius: 22px;
+  background: var(--white); cursor: pointer;
+  font-size: 14px; font-weight: 600; color: var(--grey-800);
+  touch-action: manipulation;
+  transition: border-color .12s, background .12s;
+  display: flex; align-items: center;
+}
+.player-chip:hover:not(:disabled) { border-color: var(--red); }
+.player-chip.selected { border-color: var(--red); background: var(--red-light); color: var(--red); }
+.player-chip:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Ngop selection */
+.winner-section, .ngop-section { margin-top: 16px; }
+.section-sub { font-size: 13px; font-weight: 700; color: var(--grey-600); margin-bottom: 8px; }
+
+/* Events section */
+.events-section { margin-top: 20px; }
+.event-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.event-chips { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.event-chip {
+  background: var(--grey-100); border-radius: var(--radius-sm);
+  padding: 8px 12px; display: flex; align-items: center; gap: 8px;
+  font-size: 14px;
+}
+.event-chip-label { flex: 1; }
+.event-chip-del {
+  background: none; border: none; color: var(--grey-400);
+  cursor: pointer; font-size: 18px; min-width: 32px; min-height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; touch-action: manipulation;
+}
+.event-chip-del:hover { color: var(--red); background: var(--red-light); }
+
+/* Event inline form */
+.event-form {
+  background: var(--grey-50); border: 1.5px solid var(--grey-200);
+  border-radius: var(--radius-sm); padding: 14px; margin-bottom: 12px;
+}
+.event-form-row { margin-bottom: 12px; }
+.event-form-label { font-size: 13px; font-weight: 600; color: var(--grey-600); margin-bottom: 6px; }
+.event-form-actions { display: flex; gap: 8px; }
+
+/* Preview table */
+.preview-section { margin-top: 20px; }
+.preview-table { width: 100%; border-collapse: collapse; }
+.preview-table th, .preview-table td {
+  padding: 8px 10px; text-align: center;
+  border-bottom: 1px solid var(--grey-100);
+  font-size: 14px;
+}
+.preview-table th { font-size: 13px; font-weight: 700; color: var(--grey-600); }
+.preview-score { font-size: 18px; font-weight: 800; }
+
+.sum-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 700;
+  margin-top: 10px;
+}
+.sum-badge.ok  { background: var(--green-bg); color: var(--green); }
+.sum-badge.err { background: #fce8e6; color: var(--red); }
+
+/* ─── Bottom action bar ──────────────────────────────────────────── */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  background: var(--white); border-top: 1px solid var(--grey-200);
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+}
+.bottom-bar .container { display: flex; gap: 10px; }
+.bottom-bar .btn { flex: 1; }
+
+/* ─── Toast ──────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: var(--grey-900); color: var(--white);
+  padding: 10px 20px; border-radius: 24px; font-size: 14px;
+  z-index: 300; opacity: 0; transition: opacity .25s;
+  pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; }
+
+/* ─── Utility ────────────────────────────────────────────────────── */
+.mt-8  { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.text-center { text-align: center; }
+.text-muted { color: var(--grey-600); font-size: 13px; }
+.hidden { display: none !important; }
+
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Home Screen ──────────────────────────────────────────── -->
+  <div id="screen-home" class="screen">
+    <header class="app-header">
+      <div class="container">
+        <span class="header-title">🃏 Tiến Lên</span>
+        <div class="header-actions">
+          <button class="header-btn" id="btn-export" aria-label="Xuất dữ liệu" title="Xuất JSON">💾</button>
+          <button class="header-btn" id="btn-import-trigger" aria-label="Nhập dữ liệu" title="Nhập JSON">📂</button>
+        </div>
+      </div>
+    </header>
+    <main class="screen-body">
+      <div class="container">
+        <div id="group-list"></div>
+      </div>
+    </main>
+    <button class="fab" id="btn-new-group" aria-label="Tạo nhóm mới" title="Tạo nhóm mới">＋</button>
+  </div>
+
+  <!-- ── Group Detail Screen ──────────────────────────────────── -->
+  <div id="screen-group" class="screen">
+    <header class="app-header">
+      <div class="container">
+        <button class="header-back" id="btn-back-group" aria-label="Quay lại">‹</button>
+        <span class="header-title" id="group-title">Nhóm</span>
+        <div class="header-actions">
+          <button class="header-btn" id="btn-del-group" aria-label="Xóa nhóm" title="Xóa nhóm">🗑️</button>
+        </div>
+      </div>
+    </header>
+    <main class="screen-body">
+      <div class="container">
+        <div id="group-totals" class="totals-row"></div>
+        <div id="group-stats-section"></div>
+        <div class="section-title">Lịch sử ván</div>
+        <div id="rounds-list"></div>
+      </div>
+    </main>
+    <button class="fab" id="btn-new-round" aria-label="Thêm ván mới" title="Ván mới">＋</button>
+  </div>
+
+  <!-- ── Wizard Screen ────────────────────────────────────────── -->
+  <div id="screen-wizard" class="screen">
+    <header class="app-header">
+      <div class="container">
+        <button class="header-back" id="btn-wizard-back" aria-label="Quay lại">‹</button>
+        <span class="header-title" id="wizard-title">Ván mới</span>
+      </div>
+    </header>
+    <main class="wizard-body">
+      <div class="container">
+        <div class="step-indicator">
+          <div class="step-dot" id="dot-1"></div>
+          <div class="step-dot" id="dot-2"></div>
+          <div class="step-dot" id="dot-3"></div>
+          <span class="step-label" id="step-label-text"></span>
+        </div>
+        <div id="wizard-content"></div>
+      </div>
+    </main>
+    <div class="bottom-bar">
+      <div class="container">
+        <button class="btn btn-secondary" id="btn-step-back">← Trước</button>
+        <button class="btn btn-primary" id="btn-step-next">Tiếp →</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- #app -->
+
+<!-- Hidden file input for import -->
+<input type="file" id="file-input" accept=".json" class="hidden" aria-hidden="true">
+
+<!-- Create Group Modal -->
+<div class="modal-overlay" id="modal-new-group" role="dialog" aria-modal="true" aria-label="Tạo nhóm mới">
+  <div class="modal">
+    <div class="modal-title">Tạo nhóm mới</div>
+    <div class="field">
+      <label for="input-group-name">Tên nhóm</label>
+      <input type="text" id="input-group-name" placeholder="VD: Nhóm bạn thân" autocomplete="off">
+    </div>
+    <div class="player-inputs">
+      <div class="field">
+        <label for="p0">Người chơi 1</label>
+        <input type="text" id="p0" placeholder="Tên" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="p1">Người chơi 2</label>
+        <input type="text" id="p1" placeholder="Tên" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="p2">Người chơi 3</label>
+        <input type="text" id="p2" placeholder="Tên" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="p3">Người chơi 4</label>
+        <input type="text" id="p3" placeholder="Tên" autocomplete="off">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="btn-cancel-group">Hủy</button>
+      <button class="btn btn-primary" id="btn-save-group">Tạo nhóm</button>
+    </div>
+  </div>
+</div>
+
+<!-- Event Add Modal -->
+<div class="modal-overlay" id="modal-event" role="dialog" aria-modal="true" aria-label="Thêm sự kiện">
+  <div class="modal">
+    <div class="modal-title" id="event-modal-title">Thêm sự kiện</div>
+    <div id="event-modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="btn-cancel-event">Hủy</button>
+      <button class="btn btn-primary" id="btn-save-event">Thêm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/**
+ * score-engine.js — Tiến Lên Score Tracker
+ * Pure functions only. No DOM, no storage, no side effects.
+ */
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const RANK_POINTS = [4, 2, -2, -4]; // nhất, nhì, ba, bét
+
+const NGOP_TABLE = {
+  ngop1: { winner: 8,  victim: -8,  bystander: null }, // bystanders tranh nhì/ba → dùng bystanderRanks
+  ngop2: { winner: 18, victim: -8,  bystander: -2  },
+  ngop3: { winner: 36, victim: -12, bystander: 0   },
+};
+
+const EVENT_POINTS = {
+  heoDen:      2,
+  heoDo:       4,
+  baDoiThong:  6,
+  tuQuy:       8,
+  tuDoiThong:  10,
+};
+
+const VALID_TYPES   = new Set(['normal', 'ngop1', 'ngop2', 'ngop3']);
+const VALID_EVENTS  = new Set(Object.keys(EVENT_POINTS));
+const SEATS         = [0, 1, 2, 3];
+
+// ─── calculateRound ───────────────────────────────────────────────────────────
+
+/**
+ * Compute scores for a single round.
+ * @param {object} round
+ * @returns {number[]} [s0, s1, s2, s3]
+ */
+function calculateRound(round) {
+  const scores = [0, 0, 0, 0];
+  const { type, winner, ngopSeats = [], ranks = [], events = [] } = round;
+
+  // Base scoring
+  if (type === 'normal') {
+    for (const seat of SEATS) {
+      scores[seat] += RANK_POINTS[ranks[seat]];
+    }
+  } else if (type === 'ngop1') {
+    // Winner +8, victim -8, 2 bystanders tranh nhì/ba: bystanderRanks[seat] = 1 (nhì,+2) hoặc 2 (ba,-2)
+    scores[winner] += 8;
+    scores[ngopSeats[0]] += -8;
+    const bystanderSeats = SEATS.filter(s => s !== winner && s !== ngopSeats[0]);
+    for (const seat of bystanderSeats) {
+      const r = (round.bystanderRanks || {})[seat]; // 1=nhì(+2), 2=ba(-2)
+      scores[seat] += r === 1 ? 2 : r === 2 ? -2 : 0;
+    }
+  } else {
+    const tbl = NGOP_TABLE[type];
+    scores[winner] += tbl.winner;
+    for (const seat of SEATS) {
+      if (seat === winner) continue;
+      scores[seat] += ngopSeats.includes(seat) ? tbl.victim : tbl.bystander;
+    }
+  }
+
+  // Apply events (1-to-1 transfer)
+  for (const ev of events) {
+    const pts = EVENT_POINTS[ev.type];
+    scores[ev.from] -= pts;
+    scores[ev.to]   += pts;
+  }
+
+  return scores;
+}
+
+// ─── validateRound ────────────────────────────────────────────────────────────
+
+/**
+ * Validate a round object before saving.
+ * @param {object} round
+ * @returns {{ ok: boolean, errors: string[] }}
+ */
+function validateRound(round) {
+  const errors = [];
+  const { type, winner, ngopSeats = [], ranks = [], events = [] } = round;
+
+  if (!VALID_TYPES.has(type)) {
+    errors.push(`Loại ván không hợp lệ: "${type}"`);
+    return { ok: false, errors };
+  }
+
+  if (type === 'normal') {
+    const sorted = [...ranks].sort((a, b) => a - b);
+    if (sorted.join() !== '0,1,2,3') {
+      errors.push('Thứ hạng phải là hoán vị của [0,1,2,3] (nhất/nhì/ba/bét mỗi người 1 hạng)');
+    }
+  } else {
+    if (!SEATS.includes(winner)) {
+      errors.push('Người thắng (winner) phải là ghế 0-3');
+    }
+    const expectedVictims = type === 'ngop1' ? 1 : type === 'ngop2' ? 2 : 3;
+    if (ngopSeats.length !== expectedVictims) {
+      errors.push(`${type}: phải có đúng ${expectedVictims} nhà ngộp, nhận được ${ngopSeats.length}`);
+    }
+    if (ngopSeats.includes(winner)) {
+      errors.push('Người thắng không thể nằm trong danh sách nhà ngộp');
+    }
+    const uniqueSeats = new Set(ngopSeats);
+    if (uniqueSeats.size !== ngopSeats.length) {
+      errors.push('Danh sách nhà ngộp có ghế trùng lặp');
+    }
+    for (const s of ngopSeats) {
+      if (!SEATS.includes(s)) errors.push(`Ghế ngộp không hợp lệ: ${s}`);
+    }
+    // ngop1: bystanderRanks phải có đúng nhì(1) và ba(2) cho 2 người còn lại
+    if (type === 'ngop1' && ngopSeats.length === 1) {
+      const bystanderSeats = SEATS.filter(s => s !== winner && s !== ngopSeats[0]);
+      const br = round.bystanderRanks || {};
+      const vals = bystanderSeats.map(s => br[s]);
+      if (!vals.includes(1) || !vals.includes(2)) {
+        errors.push('Ngộp 1 nhà: phải xếp nhì/ba cho 2 người còn lại');
+      }
+    }
+  }
+
+  for (let i = 0; i < events.length; i++) {
+    const ev = events[i];
+    const label = `Sự kiện #${i + 1}`;
+    if (!VALID_EVENTS.has(ev.type)) {
+      errors.push(`${label}: loại không hợp lệ "${ev.type}"`);
+    }
+    if (!SEATS.includes(ev.from)) {
+      errors.push(`${label}: người gây (from) không hợp lệ`);
+    }
+    if (!SEATS.includes(ev.to)) {
+      errors.push(`${label}: người bị (to) không hợp lệ`);
+    }
+    if (ev.from === ev.to) {
+      errors.push(`${label}: người gây và người bị không thể là cùng 1 người`);
+    }
+  }
+
+  if (errors.length === 0) {
+    const sum = calculateRound(round).reduce((a, b) => a + b, 0);
+    if (sum !== 0) {
+      errors.push(`Tổng điểm phải bằng 0, hiện tại: ${sum}`);
+    }
+  }
+
+  return { ok: errors.length === 0, errors };
+}
+
+// ─── calculateGroupTotals ─────────────────────────────────────────────────────
+
+/**
+ * Sum scores across all rounds in a group.
+ * @param {object} group
+ * @returns {number[]} [t0, t1, t2, t3]
+ */
+function calculateGroupTotals(group) {
+  const totals = [0, 0, 0, 0];
+  for (const round of group.rounds ?? []) {
+    const scores = round.scores ?? calculateRound(round);
+    for (const seat of SEATS) totals[seat] += scores[seat];
+  }
+  return totals;
+}
+
+// ─── calculateStats ───────────────────────────────────────────────────────────
+
+/**
+ * Aggregate statistics for a group.
+ * @param {object} group
+ * @returns {{ wins, winRate, avgScore, roundsPlayed }}
+ */
+function calculateStats(group) {
+  const rounds = group.rounds ?? [];
+  const n = rounds.length;
+  const wins    = [0, 0, 0, 0];
+  const totals  = calculateGroupTotals(group);
+
+  for (const round of rounds) {
+    if (round.type === 'normal') {
+      const winnerSeat = round.ranks.indexOf(0); // rank 0 = nhất
+      if (winnerSeat !== -1) wins[winnerSeat]++;
+    } else {
+      wins[round.winner]++;
+    }
+  }
+
+  return {
+    wins,
+    winRate:    SEATS.map(i => n > 0 ? wins[i] / n : 0),
+    avgScore:   SEATS.map(i => n > 0 ? totals[i] / n : 0),
+    roundsPlayed: n,
+  };
+}
+
+// ─── Inline Tests ─────────────────────────────────────────────────────────────
+
+function _sum(arr) { return arr.reduce((a, b) => a + b, 0); }
+
+function _runTests() {
+  // ── Normal round ──
+  const normal = { type: 'normal', ranks: [0, 1, 2, 3], events: [] };
+  const ns = calculateRound(normal);
+  console.assert(ns[0] ===  4, 'normal: nhất = +4');
+  console.assert(ns[1] ===  2, 'normal: nhì = +2');
+  console.assert(ns[2] === -2, 'normal: ba = -2');
+  console.assert(ns[3] === -4, 'normal: bét = -4');
+  console.assert(_sum(ns) === 0, 'normal: zero-sum');
+
+  // Normal round — reversed seats
+  const normal2 = { type: 'normal', ranks: [3, 2, 1, 0], events: [] };
+  const ns2 = calculateRound(normal2);
+  console.assert(ns2[0] === -4 && ns2[3] === 4, 'normal: reversed seats');
+  console.assert(_sum(ns2) === 0, 'normal reversed: zero-sum');
+
+  // ── Ngop3 ──
+  const ngop3 = { type: 'ngop3', winner: 0, ngopSeats: [1, 2, 3], events: [] };
+  const n3 = calculateRound(ngop3);
+  console.assert(n3[0] ===  36, 'ngop3: winner +36');
+  console.assert(n3[1] === -12, 'ngop3: victim -12');
+  console.assert(_sum(n3) === 0, 'ngop3: zero-sum');
+
+  // ── Ngop2 ──
+  const ngop2 = { type: 'ngop2', winner: 0, ngopSeats: [1, 2], events: [] };
+  const n2 = calculateRound(ngop2);
+  console.assert(n2[0] ===  18, 'ngop2: winner +18');
+  console.assert(n2[1] ===  -8, 'ngop2: victim -8');
+  console.assert(n2[2] ===  -8, 'ngop2: victim -8');
+  console.assert(n2[3] ===  -2, 'ngop2: bystander -2');
+  console.assert(_sum(n2) === 0, 'ngop2: zero-sum');
+
+  // ── Ngop1 ──
+  const ngop1 = { type: 'ngop1', winner: 0, ngopSeats: [1], bystanderRanks: { 2: 1, 3: 2 }, events: [] };
+  const n1 = calculateRound(ngop1);
+  console.assert(n1[0] ===  8, 'ngop1: winner +8');
+  console.assert(n1[1] === -8, 'ngop1: victim -8');
+  console.assert(n1[2] ===  2, 'ngop1: bystander nhì +2');
+  console.assert(n1[3] === -2, 'ngop1: bystander ba -2');
+  console.assert(_sum(n1) === 0, 'ngop1: zero-sum');
+
+  // ── Events ──
+  const evRound = {
+    type: 'normal', ranks: [0, 1, 2, 3],
+    events: [
+      { type: 'heoDen',  from: 3, to: 0 }, // bét bị chặt heo đen
+      { type: 'heoDo',   from: 2, to: 1 }, // ba bị chặt heo đỏ
+    ],
+  };
+  const es = calculateRound(evRound);
+  console.assert(es[0] ===  4 + 2,  'event heoDen: seat 0 +2');
+  console.assert(es[1] ===  2 + 4,  'event heoDo: seat 1 +4');
+  console.assert(es[2] === -2 - 4,  'event heoDo: seat 2 -4');
+  console.assert(es[3] === -4 - 2,  'event heoDen: seat 3 -2');
+  console.assert(_sum(es) === 0, 'events: zero-sum');
+
+  // Đôi heo bị đè (1 đen + 1 đỏ) → 2 events riêng
+  const deHeo = {
+    type: 'normal', ranks: [0, 1, 2, 3],
+    events: [
+      { type: 'heoDen', from: 3, to: 0 },
+      { type: 'heoDo',  from: 3, to: 0 },
+    ],
+  };
+  const dh = calculateRound(deHeo);
+  console.assert(dh[0] === 4 + 2 + 4,  'đè heo: người đè +6');
+  console.assert(dh[3] === -4 - 2 - 4, 'đè heo: người bị -6');
+  console.assert(_sum(dh) === 0, 'đè heo: zero-sum');
+
+  // All event types — just check zero-sum
+  for (const evType of Object.keys(EVENT_POINTS)) {
+    const r = { type: 'normal', ranks: [0, 1, 2, 3], events: [{ type: evType, from: 3, to: 0 }] };
+    console.assert(_sum(calculateRound(r)) === 0, `event ${evType}: zero-sum`);
+  }
+
+  // ── validateRound ──
+  console.assert(validateRound(normal).ok,  'validate: normal valid');
+  console.assert(validateRound(ngop3).ok,   'validate: ngop3 valid');
+  console.assert(!validateRound({ type: 'normal', ranks: [0, 0, 2, 3], events: [] }).ok,
+    'validate: duplicate ranks rejected');
+  console.assert(!validateRound({ type: 'ngop1', winner: 0, ngopSeats: [0], events: [] }).ok,
+    'validate: winner in ngopSeats rejected');
+  console.assert(!validateRound({ type: 'normal', ranks: [0, 1, 2, 3],
+    events: [{ type: 'heoDen', from: 2, to: 2 }] }).ok,
+    'validate: from===to rejected');
+
+  // ── calculateStats ──
+  const group = {
+    rounds: [
+      { type: 'normal', ranks: [0,1,2,3], events: [], scores: [4,2,-2,-4] },
+      { type: 'normal', ranks: [1,0,2,3], events: [], scores: [2,4,-2,-4] },
+      { type: 'ngop3',  winner: 2, ngopSeats: [0,1,3], events: [], scores: [-12,-12,36,-12] },
+    ],
+  };
+  const stats = calculateStats(group);
+  console.assert(stats.roundsPlayed === 3, 'stats: roundsPlayed');
+  console.assert(stats.wins[0] === 1, 'stats: wins seat 0');
+  console.assert(stats.wins[1] === 1, 'stats: wins seat 1');
+  console.assert(stats.wins[2] === 1, 'stats: wins seat 2 (ngop3)');
+  console.assert(Math.abs(stats.winRate[0] - 1/3) < 1e-9, 'stats: winRate seat 0');
+
+  console.info('✓ score-engine: all tests passed');
+}
+
+// Run tests when ?test param present OR in dev (non-production)
+if (typeof window !== 'undefined' &&
+    (window.location.search.includes('test') || window.location.hostname === 'localhost' || window.location.protocol === 'file:')) {
+  _runTests();
+}
+
+
+/**
+ * storage.js — Tiến Lên Score Tracker
+ * localStorage CRUD wrapper + JSON export/import.
+ * All mutations are write-through (save on every change).
+ */
+
+
+const KEY = 'tienlen.v1';
+
+// ─── Core load/save ───────────────────────────────────────────────────────────
+
+/** @returns {{ groups: Group[] }} */
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return { groups: [] };
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.groups)) return { groups: [] };
+    return parsed;
+  } catch (e) {
+    console.warn('tienlen: failed to load state, resetting.', e);
+    return { groups: [] };
+  }
+}
+
+/** @param {{ groups: Group[] }} state */
+function save(state) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error('tienlen: failed to save state.', e);
+    throw new Error('Không thể lưu dữ liệu. Bộ nhớ trình duyệt có thể đã đầy.');
+  }
+}
+
+/** @returns {boolean} */
+function isAvailable() {
+  try {
+    const probe = '__tienlen_probe__';
+    localStorage.setItem(probe, '1');
+    localStorage.removeItem(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ─── Internal helpers ─────────────────────────────────────────────────────────
+
+function _state() { return load(); }
+
+function _saveState(state) { save(state); return state; }
+
+function _now() { return new Date().toISOString(); }
+
+function _uuid() { return crypto.randomUUID(); }
+
+// ─── Group CRUD ───────────────────────────────────────────────────────────────
+
+/**
+ * @param {string} name
+ * @param {string[]} players — exactly 4 names
+ * @returns {Group}
+ */
+function createGroup(name, players) {
+  const state = _state();
+  const group = {
+    id: _uuid(),
+    name,
+    players,
+    createdAt: _now(),
+    rounds: [],
+  };
+  state.groups.push(group);
+  _saveState(state);
+  return group;
+}
+
+/**
+ * @param {string} groupId
+ * @returns {Group | null}
+ */
+function getGroup(groupId) {
+  return _state().groups.find(g => g.id === groupId) ?? null;
+}
+
+/** @param {string} groupId */
+function deleteGroup(groupId) {
+  const state = _state();
+  state.groups = state.groups.filter(g => g.id !== groupId);
+  _saveState(state);
+}
+
+// ─── Round CRUD ───────────────────────────────────────────────────────────────
+
+/**
+ * Add a new round, auto-computing scores.
+ * @param {string} groupId
+ * @param {object} roundData — round without id/createdAt/scores
+ * @returns {Round}
+ */
+function addRound(groupId, roundData) {
+  const state = _state();
+  const group = state.groups.find(g => g.id === groupId);
+  if (!group) throw new Error(`Không tìm thấy nhóm: ${groupId}`);
+
+  const round = {
+    ...roundData,
+    id: _uuid(),
+    createdAt: _now(),
+    scores: calculateRound(roundData),
+  };
+  group.rounds.push(round);
+  _saveState(state);
+  return round;
+}
+
+/**
+ * Update an existing round, recomputing scores.
+ * @param {string} groupId
+ * @param {string} roundId
+ * @param {object} roundData
+ * @returns {Round}
+ */
+function updateRound(groupId, roundId, roundData) {
+  const state = _state();
+  const group = state.groups.find(g => g.id === groupId);
+  if (!group) throw new Error(`Không tìm thấy nhóm: ${groupId}`);
+
+  const idx = group.rounds.findIndex(r => r.id === roundId);
+  if (idx === -1) throw new Error(`Không tìm thấy ván: ${roundId}`);
+
+  const existing = group.rounds[idx];
+  const updated = {
+    ...roundData,
+    id: existing.id,
+    createdAt: existing.createdAt,
+    scores: calculateRound(roundData),
+  };
+  group.rounds[idx] = updated;
+  _saveState(state);
+  return updated;
+}
+
+/**
+ * @param {string} groupId
+ * @param {string} roundId
+ */
+function deleteRound(groupId, roundId) {
+  const state = _state();
+  const group = state.groups.find(g => g.id === groupId);
+  if (!group) throw new Error(`Không tìm thấy nhóm: ${groupId}`);
+  group.rounds = group.rounds.filter(r => r.id !== roundId);
+  _saveState(state);
+}
+
+// ─── Export / Import ──────────────────────────────────────────────────────────
+
+/**
+ * Export entire state as pretty-printed JSON string.
+ * @returns {string}
+ */
+function exportJSON() {
+  return JSON.stringify(load(), null, 2);
+}
+
+/**
+ * Import JSON string, replacing current state after validation.
+ * @param {string} jsonString
+ * @returns {{ ok: boolean, error?: string }}
+ */
+function importJSON(jsonString) {
+  let parsed;
+  try {
+    parsed = JSON.parse(jsonString);
+  } catch {
+    return { ok: false, error: 'File JSON không hợp lệ, không thể đọc được.' };
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    return { ok: false, error: 'Dữ liệu không đúng định dạng.' };
+  }
+  if (!Array.isArray(parsed.groups)) {
+    return { ok: false, error: 'Thiếu trường "groups" trong dữ liệu.' };
+  }
+  for (let i = 0; i < parsed.groups.length; i++) {
+    const g = parsed.groups[i];
+    if (!g.id || !g.name) {
+      return { ok: false, error: `Nhóm #${i + 1} thiếu id hoặc tên.` };
+    }
+    if (!Array.isArray(g.players) || g.players.length !== 4) {
+      return { ok: false, error: `Nhóm "${g.name}" phải có đúng 4 người chơi.` };
+    }
+    if (!Array.isArray(g.rounds)) {
+      return { ok: false, error: `Nhóm "${g.name}" thiếu trường rounds.` };
+    }
+  }
+
+  try {
+    save(parsed);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+
+/**
+ * app.js — Tiến Lên Score Tracker
+ * State, routing, rendering, event wiring.
+ * Phases 3-9: Home, Group Detail, Wizard (normal+ngop+events), Edit/Delete, Stats, Polish.
+ */
+
+// Dependencies: score-engine.js + storage.js bundled above (no imports needed)
+
+// ─── State ────────────────────────────────────────────────────────────────────
+
+let state = load();
+
+// Wizard state (resets on each wizard entry)
+let wizardState = {};
+
+// Current route params
+let routeParams = {};
+
+// ─── Router ───────────────────────────────────────────────────────────────────
+
+const SCREENS = ['home', 'group', 'wizard'];
+
+function showScreen(name) {
+  SCREENS.forEach(s => {
+    const el = document.getElementById(`screen-${s}`);
+    el.classList.toggle('active', s === name);
+  });
+}
+
+function route() {
+  const hash = location.hash || '#/';
+  const parts = hash.replace('#/', '').split('/').filter(Boolean);
+
+  if (parts.length === 0) {
+    routeParams = {};
+    renderHome();
+    showScreen('home');
+  } else if (parts[0] === 'group' && parts[1] && !parts[2]) {
+    routeParams = { groupId: parts[1] };
+    renderGroup(parts[1]);
+    showScreen('group');
+  } else if (parts[0] === 'group' && parts[1] && parts[2] === 'round' && parts[3] === 'new') {
+    routeParams = { groupId: parts[1], roundId: null };
+    initWizard(parts[1], null);
+    showScreen('wizard');
+  } else if (parts[0] === 'group' && parts[1] && parts[2] === 'round' && parts[4] === 'edit') {
+    routeParams = { groupId: parts[1], roundId: parts[3] };
+    initWizard(parts[1], parts[3]);
+    showScreen('wizard');
+  } else {
+    location.hash = '#/';
+  }
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fmtScore(n) {
+  if (n > 0) return `+${n}`;
+  return String(n);
+}
+
+function scoreClass(n) {
+  if (n > 0) return 'pos';
+  if (n < 0) return 'neg';
+  return 'zero';
+}
+
+function showToast(msg, duration = 2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function reloadState() {
+  state = load();
+}
+
+// ─── Home Screen ──────────────────────────────────────────────────────────────
+
+function renderHome() {
+  reloadState();
+  const list = document.getElementById('group-list');
+  const groups = state.groups;
+
+  if (groups.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🃏</div>
+        <p>Chưa có nhóm nào.<br>Nhấn <strong>＋</strong> để tạo nhóm mới.</p>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = groups.map(g => {
+    const totals = calculateGroupTotals(g);
+    const n = g.rounds.length;
+    return `
+      <div class="group-card" data-id="${esc(g.id)}" role="button" tabindex="0" aria-label="Nhóm ${esc(g.name)}">
+        <div class="group-card-info">
+          <div class="group-card-name">${esc(g.name)}</div>
+          <div class="group-card-meta">${g.players.map(esc).join(' · ')} &nbsp;·&nbsp; ${n} ván</div>
+        </div>
+        <span class="group-card-arrow">›</span>
+        <button class="group-card-del" data-del="${esc(g.id)}" aria-label="Xóa nhóm ${esc(g.name)}">✕</button>
+      </div>`;
+  }).join('');
+
+  // Click → navigate
+  list.querySelectorAll('.group-card').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.closest('[data-del]')) return;
+      location.hash = `#/group/${card.dataset.id}`;
+    });
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.target.closest('[data-del]')) {
+        location.hash = `#/group/${card.dataset.id}`;
+      }
+    });
+  });
+
+  // Delete buttons
+  list.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const g = state.groups.find(x => x.id === btn.dataset.del);
+      if (!g) return;
+      if (confirm(`Xóa nhóm "${g.name}"? Tất cả ván đấu sẽ bị mất.`)) {
+        deleteGroup(btn.dataset.del);
+        reloadState();
+        renderHome();
+        showToast('Đã xóa nhóm');
+      }
+    });
+  });
+}
+
+// ─── Group Detail Screen ──────────────────────────────────────────────────────
+
+function renderGroup(groupId) {
+  reloadState();
+  const group = state.groups.find(g => g.id === groupId);
+  if (!group) { location.hash = '#/'; return; }
+
+  document.getElementById('group-title').textContent = group.name;
+
+  // Totals
+  const totals = calculateGroupTotals(group);
+  const maxTotal = Math.max(...totals);
+  document.getElementById('group-totals').innerHTML = group.players.map((p, i) => `
+    <div class="total-card ${totals[i] === maxTotal && group.rounds.length > 0 ? 'leader' : ''}">
+      <div class="total-name">${esc(p)}</div>
+      <div class="total-score ${scoreClass(totals[i])}">${fmtScore(totals[i])}</div>
+    </div>`).join('');
+
+  // Stats
+  renderStats(group);
+
+  // Rounds
+  renderRoundsList(group);
+}
+
+function renderStats(group) {
+  const container = document.getElementById('group-stats-section');
+  if (group.rounds.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  const stats = calculateStats(group);
+  const maxWins = Math.max(...stats.wins);
+
+  container.innerHTML = `
+    <div class="section-title">Thống kê — ${stats.roundsPlayed} ván</div>
+    <div class="card stats-section">
+      <table class="stats-table">
+        <thead>
+          <tr>
+            <th>Người chơi</th>
+            <th>Tổng</th>
+            <th>Thắng</th>
+            <th>Tỷ lệ</th>
+            <th>TB/ván</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${group.players.map((p, i) => {
+            const totals = calculateGroupTotals(group);
+            const isLeader = stats.wins[i] === maxWins && maxWins > 0;
+            const avg = stats.avgScore[i];
+            return `<tr class="${isLeader ? 'leader' : ''}">
+              <td>${isLeader ? '👑 ' : ''}${esc(p)}</td>
+              <td class="${scoreClass(totals[i])}">${fmtScore(totals[i])}</td>
+              <td>${stats.wins[i]}</td>
+              <td>${(stats.winRate[i] * 100).toFixed(1)}%</td>
+              <td class="${scoreClass(avg)}">${avg >= 0 ? '+' : ''}${avg.toFixed(1)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderRoundsList(group) {
+  const container = document.getElementById('rounds-list');
+  if (group.rounds.length === 0) {
+    container.innerHTML = `<div class="text-muted text-center mt-16">Chưa có ván nào. Nhấn ＋ để thêm ván mới.</div>`;
+    return;
+  }
+
+  const typeLabels = { normal: 'Bình thường', ngop1: 'Ngộp 1 nhà', ngop2: 'Ngộp 2 nhà', ngop3: 'Ngộp 3 nhà' };
+  const typeBadge = { normal: 'badge-normal', ngop1: 'badge-ngop1', ngop2: 'badge-ngop2', ngop3: 'badge-ngop3' };
+
+  container.innerHTML = [...group.rounds].reverse().map((r, revIdx) => {
+    const idx = group.rounds.length - revIdx;
+    const scores = r.scores || calculateRound(r);
+    const scoresHtml = group.players.map((p, i) =>
+      `<span>${esc(p)}: <span class="round-score-val ${scoreClass(scores[i])}">${fmtScore(scores[i])}</span></span>`
+    ).join(' &nbsp;');
+
+    return `
+      <div class="round-row" data-rid="${esc(r.id)}" role="button" tabindex="0" aria-label="Ván ${idx}">
+        <div class="round-row-info">
+          <span class="round-type-badge ${typeBadge[r.type] || 'badge-normal'}">${typeLabels[r.type] || r.type}</span>
+          <div class="round-scores">${scoresHtml}</div>
+        </div>
+        <span class="round-number">#${idx}</span>
+        <button class="round-del" data-del-round="${esc(r.id)}" aria-label="Xóa ván ${idx}">✕</button>
+      </div>`;
+  }).join('');
+
+  // Click → edit
+  container.querySelectorAll('.round-row').forEach(row => {
+    row.addEventListener('click', e => {
+      if (e.target.closest('[data-del-round]')) return;
+      location.hash = `#/group/${group.id}/round/${row.dataset.rid}/edit`;
+    });
+    row.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.target.closest('[data-del-round]')) {
+        location.hash = `#/group/${group.id}/round/${row.dataset.rid}/edit`;
+      }
+    });
+  });
+
+  // Delete rounds
+  container.querySelectorAll('[data-del-round]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (confirm('Xóa ván này?')) {
+        deleteRound(group.id, btn.dataset.delRound);
+        reloadState();
+        renderGroup(group.id);
+        showToast('Đã xóa ván');
+      }
+    });
+  });
+}
+
+// ─── Wizard ───────────────────────────────────────────────────────────────────
+
+const TYPES = [
+  { id: 'normal', label: 'Bình thường', icon: '🃏', pts: 'Nhất +4 / Bét -4' },
+  { id: 'ngop1',  label: 'Ngộp 1 nhà',  icon: '⚔️',  pts: 'Thắng +8 / Ngộp -8' },
+  { id: 'ngop2',  label: 'Ngộp 2 nhà',  icon: '🔥',  pts: 'Thắng +18 / Ngộp -8' },
+  { id: 'ngop3',  label: 'Ngộp 3 nhà',  icon: '💀',  pts: 'Thắng +36 / Ngộp -12' },
+];
+
+function initWizard(groupId, roundId) {
+  reloadState();
+  const group = state.groups.find(g => g.id === groupId);
+  if (!group) { location.hash = '#/'; return; }
+
+  const existing = roundId ? group.rounds.find(r => r.id === roundId) : null;
+
+  if (existing) {
+    // Pre-fill from existing round
+    wizardState = {
+      step: 1,
+      groupId,
+      roundId,
+      type: existing.type,
+      ranks: [...(existing.ranks || [null, null, null, null])],
+      winner: existing.winner ?? null,
+      ngopSeats: [...(existing.ngopSeats || [])],
+      bystanderRanks: { ...(existing.bystanderRanks || {}) },
+      events: JSON.parse(JSON.stringify(existing.events || [])),
+      pendingEvent: null,
+    };
+  } else {
+    wizardState = {
+      step: 1,
+      groupId,
+      roundId: null,
+      type: null,
+      ranks: [null, null, null, null],
+      winner: null,
+      ngopSeats: [],
+      bystanderRanks: {},  // ngop1 only: {seat: 1|2} nhì/ba cho 2 bystanders
+      events: [],
+      pendingEvent: null,
+    };
+  }
+
+  document.getElementById('wizard-title').textContent = roundId ? 'Sửa ván' : 'Ván mới';
+  renderWizardStep();
+}
+
+function renderWizardStep() {
+  const { step } = wizardState;
+  // Step dots
+  [1, 2, 3].forEach(n => {
+    const dot = document.getElementById(`dot-${n}`);
+    dot.className = 'step-dot' + (n < step ? ' done' : n === step ? ' active' : '');
+  });
+  const labels = ['Loại ván', 'Người chơi', 'Sự kiện & Xác nhận'];
+  document.getElementById('step-label-text').textContent = `Bước ${step}/3: ${labels[step - 1]}`;
+
+  const backBtn = document.getElementById('btn-step-back');
+  const nextBtn = document.getElementById('btn-step-next');
+
+  if (step === 1) {
+    backBtn.textContent = '← Hủy';
+    nextBtn.textContent = 'Tiếp →';
+    nextBtn.style.display = '';
+    renderStep1();
+  } else if (step === 2) {
+    backBtn.textContent = '← Trước';
+    nextBtn.textContent = 'Tiếp →';
+    nextBtn.style.display = '';
+    renderStep2();
+  } else {
+    backBtn.textContent = '← Trước';
+    nextBtn.textContent = wizardState.roundId ? '💾 Cập nhật' : '💾 Lưu ván';
+    nextBtn.style.display = '';
+    renderStep3();
+  }
+
+  updateNextBtn();
+}
+
+function updateNextBtn() {
+  const btn = document.getElementById('btn-step-next');
+  const { step, type, ranks, winner, ngopSeats } = wizardState;
+
+  if (step === 1) {
+    btn.disabled = !type;
+  } else if (step === 2) {
+    if (type === 'normal') {
+      btn.disabled = ranks.some(r => r === null);
+    } else if (type === 'ngop1') {
+      const br = wizardState.bystanderRanks || {};
+      const bystanderSeats = [0,1,2,3].filter(s => s !== winner && !ngopSeats.includes(s));
+      const brOk = bystanderSeats.length === 2 &&
+        [br[bystanderSeats[0]], br[bystanderSeats[1]]].sort().join() === '1,2';
+      btn.disabled = winner === null || ngopSeats.length !== 1 || !brOk;
+    } else {
+      const needed = type === 'ngop1' ? 1 : type === 'ngop2' ? 2 : 3;
+      btn.disabled = winner === null || ngopSeats.length !== needed;
+    }
+  } else {
+    const round = buildRound();
+    const v = validateRound(round);
+    btn.disabled = !v.ok;
+  }
+}
+
+function buildRound() {
+  const { type, ranks, winner, ngopSeats, bystanderRanks, events } = wizardState;
+  if (type === 'normal') return { type, ranks: [...ranks], events: [...events] };
+  if (type === 'ngop1') return { type, winner, ngopSeats: [...ngopSeats], bystanderRanks: { ...bystanderRanks }, events: [...events] };
+  return { type, winner, ngopSeats: [...ngopSeats], events: [...events] };
+}
+
+// Step 1 — Type selection
+function renderStep1() {
+  const content = document.getElementById('wizard-content');
+  content.innerHTML = `
+    <div class="type-grid">
+      ${TYPES.map(t => `
+        <div class="type-card ${wizardState.type === t.id ? 'selected' : ''}"
+             data-type="${t.id}" role="button" tabindex="0" aria-label="${t.label}">
+          <div class="type-card-icon">${t.icon}</div>
+          <div class="type-card-label">${t.label}</div>
+          <div class="type-card-pts">${t.pts}</div>
+        </div>`).join('')}
+    </div>`;
+
+  content.querySelectorAll('.type-card').forEach(card => {
+    const select = () => {
+      wizardState.type = card.dataset.type;
+      // Reset player selections when type changes
+      wizardState.ranks = [null, null, null, null];
+      wizardState.winner = null;
+      wizardState.ngopSeats = [];
+      content.querySelectorAll('.type-card').forEach(c => c.classList.toggle('selected', c === card));
+      updateNextBtn();
+    };
+    card.addEventListener('click', select);
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') select(); });
+  });
+}
+
+// Step 2 — Player assignment
+function renderStep2() {
+  const group = state.groups.find(g => g.id === wizardState.groupId);
+  const content = document.getElementById('wizard-content');
+
+  if (wizardState.type === 'normal') {
+    renderStep2Normal(group, content);
+  } else {
+    renderStep2Ngop(group, content);
+  }
+}
+
+function renderStep2Normal(group, content) {
+  const RANK_NAMES = ['🥇 Nhất', '🥈 Nhì', '🥉 Ba', '💀 Bét'];
+  const RANK_CLASSES = ['rank-0', 'rank-1', 'rank-2', 'rank-3'];
+
+  function html() {
+    return `
+      <div class="rank-section">
+        ${RANK_NAMES.map((rname, rankIdx) => {
+          const assigned = wizardState.ranks.indexOf(rankIdx);
+          return `
+            <div class="rank-row">
+              <div class="rank-badge ${RANK_CLASSES[rankIdx]}">${rname}</div>
+              <div class="player-chips" data-rank="${rankIdx}">
+                ${group.players.map((p, seat) => {
+                  const isAssigned = wizardState.ranks[seat] === rankIdx;
+                  const isOther = wizardState.ranks[seat] !== null && wizardState.ranks[seat] !== rankIdx;
+                  return `<button class="player-chip ${isAssigned ? 'selected' : ''}"
+                    data-seat="${seat}" ${isOther ? 'disabled' : ''}
+                    aria-pressed="${isAssigned}">${esc(p)}</button>`;
+                }).join('')}
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  content.innerHTML = html();
+
+  content.querySelectorAll('.player-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const seat = parseInt(btn.dataset.seat);
+      const rankRow = btn.closest('[data-rank]');
+      const rankIdx = parseInt(rankRow.dataset.rank);
+      // Unassign from previous rank
+      if (wizardState.ranks[seat] !== null) {
+        wizardState.ranks[seat] = null;
+      }
+      // Toggle assign
+      if (!btn.classList.contains('selected')) {
+        // Also clear anyone else in this rank slot
+        wizardState.ranks = wizardState.ranks.map((r, i) => r === rankIdx ? null : r);
+        wizardState.ranks[seat] = rankIdx;
+      }
+      content.innerHTML = html().match(/<div class="rank-section">[\s\S]*/)?.[0] || '';
+      // Re-render properly
+      content.innerHTML = html();
+      content.querySelectorAll('.player-chip').forEach(b => {
+        b.addEventListener('click', arguments.callee.caller); // won't work — re-wire below
+      });
+      renderStep2Normal(group, content);
+      updateNextBtn();
+    });
+  });
+}
+
+function renderStep2Ngop(group, content) {
+  const type = wizardState.type;
+  const needed = type === 'ngop1' ? 1 : type === 'ngop2' ? 2 : 3;
+  const typeLabel = { ngop1: '1 nhà', ngop2: '2 nhà', ngop3: '3 nhà' }[type];
+
+  content.innerHTML = `
+    <div class="winner-section">
+      <div class="section-sub">👑 Người thắng (giết ngộp ${typeLabel})</div>
+      <div class="player-chips" id="chips-winner">
+        ${group.players.map((p, i) => `
+          <button class="player-chip ${wizardState.winner === i ? 'selected' : ''}"
+            data-seat="${i}" aria-pressed="${wizardState.winner === i}">${esc(p)}</button>`).join('')}
+      </div>
+    </div>
+    <div class="ngop-section mt-16">
+      <div class="section-sub">💀 Nhà ngộp (chọn đúng ${needed} người)</div>
+      <div class="player-chips" id="chips-ngop">
+        ${group.players.map((p, i) => {
+          const isWinner = wizardState.winner === i;
+          const isNgop = wizardState.ngopSeats.includes(i);
+          return `<button class="player-chip ${isNgop ? 'selected' : ''}"
+            data-seat="${i}" ${isWinner ? 'disabled' : ''}
+            aria-pressed="${isNgop}">${esc(p)}</button>`;
+        }).join('')}
+      </div>
+    </div>
+    ${type === 'ngop1' && wizardState.winner !== null && wizardState.ngopSeats.length === 1 ? (() => {
+      const bystanderSeats = [0,1,2,3].filter(s => s !== wizardState.winner && s !== wizardState.ngopSeats[0]);
+      const br = wizardState.bystanderRanks || {};
+      return `<div class="ngop-section mt-16">
+        <div class="section-sub">🥈 2 người còn lại tranh nhì/ba</div>
+        ${bystanderSeats.map(s => `
+          <div class="rank-row" style="margin-bottom:10px">
+            <div class="rank-badge rank-1" style="min-width:80px">${esc(group.players[s])}</div>
+            <div class="player-chips">
+              <button class="player-chip ${br[s] === 1 ? 'selected' : ''}"
+                data-bs="${s}" data-rank="1" aria-pressed="${br[s]===1}">🥈 Nhì (+2)</button>
+              <button class="player-chip ${br[s] === 2 ? 'selected' : ''}"
+                data-bs="${s}" data-rank="2" aria-pressed="${br[s]===2}">🥉 Ba (-2)</button>
+            </div>
+          </div>`).join('')}
+      </div>`;
+    })() : ''}
+    ${wizardState.winner !== null && type === 'ngop3' ? `
+      <div class="mt-16 text-muted">
+        ${group.players.filter((_, i) => i !== wizardState.winner).map(esc).join(', ')} đều ngộp.
+      </div>` : ''}`;
+
+  // Winner chips
+  content.querySelectorAll('#chips-winner .player-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const seat = parseInt(btn.dataset.seat);
+      wizardState.winner = wizardState.winner === seat ? null : seat;
+      // Remove from ngopSeats if was there
+      wizardState.ngopSeats = wizardState.ngopSeats.filter(s => s !== seat);
+      // Reset bystanderRanks when winner changes
+      wizardState.bystanderRanks = {};
+      // Auto-fill ngopSeats for ngop3
+      if (type === 'ngop3' && wizardState.winner !== null) {
+        wizardState.ngopSeats = [0, 1, 2, 3].filter(s => s !== wizardState.winner);
+      }
+      renderStep2Ngop(group, content);
+      updateNextBtn();
+    });
+  });
+
+  // Ngop chips (only for ngop1/ngop2)
+  if (type !== 'ngop3') {
+    content.querySelectorAll('#chips-ngop .player-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const seat = parseInt(btn.dataset.seat);
+        if (wizardState.winner === seat) return;
+        const idx = wizardState.ngopSeats.indexOf(seat);
+        if (idx >= 0) {
+          wizardState.ngopSeats.splice(idx, 1);
+        } else if (wizardState.ngopSeats.length < needed) {
+          wizardState.ngopSeats.push(seat);
+        }
+        // Reset bystanderRanks when ngopSeats change
+        if (type === 'ngop1') wizardState.bystanderRanks = {};
+        renderStep2Ngop(group, content);
+        updateNextBtn();
+      });
+    });
+  }
+
+  // Bystander rank chips (ngop1 only)
+  if (type === 'ngop1') {
+    content.querySelectorAll('[data-bs]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const seat = parseInt(btn.dataset.bs);
+        const rank = parseInt(btn.dataset.rank); // 1=nhì, 2=ba
+        const br = wizardState.bystanderRanks;
+        // Enforce: each rank can only be assigned to 1 person
+        // Remove this rank from any other seat
+        for (const s of Object.keys(br)) {
+          if (br[s] === rank && parseInt(s) !== seat) delete br[s];
+        }
+        br[seat] = rank;
+        renderStep2Ngop(group, content);
+        updateNextBtn();
+      });
+    });
+  }
+}
+
+// Step 3 — Events + Preview
+function renderStep3() {
+  const group = state.groups.find(g => g.id === wizardState.groupId);
+  const round = buildRound();
+  const scores = calculateRound(round);
+  const sum = scores.reduce((a, b) => a + b, 0);
+  const v = validateRound(round);
+
+  const eventLabels = {
+    heoDen: 'Heo đen (±2)', heoDo: 'Heo đỏ (±4)',
+    baDoiThong: '3 đôi thông (±6)', tuQuy: 'Tứ quý (±8)', tuDoiThong: 'Tứ đôi thông (±10)',
+  };
+
+  document.getElementById('wizard-content').innerHTML = `
+    <div class="events-section">
+      <div class="section-title">Sự kiện đặc biệt</div>
+      <div class="event-btns">
+        <button class="btn btn-secondary btn-sm" id="btn-add-chatcheo">🐷 Heo bị chặt/úng</button>
+        <button class="btn btn-secondary btn-sm" id="btn-add-deheo">🐷🐷 Đè đôi heo</button>
+        <button class="btn btn-secondary btn-sm" id="btn-add-bobai">🃏 Bộ bài đặc biệt</button>
+      </div>
+      <div class="event-chips" id="event-chips-list">
+        ${wizardState.events.length === 0
+          ? '<div class="text-muted">Chưa có sự kiện</div>'
+          : wizardState.events.map((ev, i) => `
+              <div class="event-chip">
+                <span class="event-chip-label">${eventLabels[ev.type] || ev.type}: ${esc(group.players[ev.from])} → ${esc(group.players[ev.to])}</span>
+                <button class="event-chip-del" data-ev-idx="${i}" aria-label="Xóa sự kiện">✕</button>
+              </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="preview-section">
+      <div class="section-title">Kết quả dự kiến</div>
+      <div class="card">
+        <table class="preview-table">
+          <thead><tr>${group.players.map(p => `<th>${esc(p)}</th>`).join('')}</tr></thead>
+          <tbody><tr>${scores.map(s => `
+            <td><div class="preview-score ${scoreClass(s)}">${fmtScore(s)}</div></td>`).join('')}
+          </tr></tbody>
+        </table>
+        <div class="text-center mt-8">
+          <span class="sum-badge ${sum === 0 ? 'ok' : 'err'}">
+            ${sum === 0 ? '✓ Tổng = 0' : `✗ Tổng = ${fmtScore(sum)}`}
+          </span>
+        </div>
+        ${!v.ok && v.errors.length ? `<div class="text-muted mt-8" style="font-size:13px">${v.errors.map(esc).join('<br>')}</div>` : ''}
+      </div>
+    </div>`;
+
+  // Event delete buttons
+  document.querySelectorAll('.event-chip-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      wizardState.events.splice(parseInt(btn.dataset.evIdx), 1);
+      renderStep3();
+      updateNextBtn();
+    });
+  });
+
+  // Event add buttons
+  document.getElementById('btn-add-chatcheo').addEventListener('click', () => openEventModal('chatHeo', group));
+  document.getElementById('btn-add-deheo').addEventListener('click', () => openEventModal('deHeo', group));
+  document.getElementById('btn-add-bobai').addEventListener('click', () => openEventModal('boBai', group));
+}
+
+// ─── Event Modal ──────────────────────────────────────────────────────────────
+
+function openEventModal(mode, group) {
+  const modal = document.getElementById('modal-event');
+  const body = document.getElementById('event-modal-body');
+  const title = document.getElementById('event-modal-title');
+
+  const playerOptions = group.players.map((p, i) => `<option value="${i}">${esc(p)}</option>`).join('');
+
+  if (mode === 'chatHeo') {
+    title.textContent = '🐷 Heo bị chặt / úng';
+    body.innerHTML = `
+      <div class="field">
+        <label>Loại heo bị chặt</label>
+        <select id="ev-heo-type">
+          <option value="heoDen">Heo đen (±2)</option>
+          <option value="heoDo">Heo đỏ (±4)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Người bị chặt (mất điểm)</label>
+        <select id="ev-from">${playerOptions}</select>
+      </div>
+      <div class="field">
+        <label>Người chặt (được điểm)</label>
+        <select id="ev-to">${playerOptions}</select>
+      </div>`;
+  } else if (mode === 'deHeo') {
+    title.textContent = '🐷🐷 Đè đôi heo';
+    body.innerHTML = `
+      <div class="field">
+        <label>Cấu hình đôi heo bị bắt</label>
+        <select id="ev-de-config">
+          <option value="dd">2 heo đen (±4)</option>
+          <option value="dr">1 đen + 1 đỏ (±6)</option>
+          <option value="rr">2 heo đỏ (±8)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Người bị bắt (mất điểm)</label>
+        <select id="ev-from">${playerOptions}</select>
+      </div>
+      <div class="field">
+        <label>Người đè (được điểm)</label>
+        <select id="ev-to">${playerOptions}</select>
+      </div>`;
+  } else {
+    title.textContent = '🃏 Bộ bài đặc biệt';
+    body.innerHTML = `
+      <div class="field">
+        <label>Loại bộ bài</label>
+        <select id="ev-bobai-type">
+          <option value="baDoiThong">3 đôi thông (±6)</option>
+          <option value="tuQuy">Tứ quý (±8)</option>
+          <option value="tuDoiThong">Tứ đôi thông (±10)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Người bị (mất điểm)</label>
+        <select id="ev-from">${playerOptions}</select>
+      </div>
+      <div class="field">
+        <label>Người được (được điểm)</label>
+        <select id="ev-to">${playerOptions}</select>
+      </div>`;
+  }
+
+  modal.classList.add('open');
+
+  // Save button
+  const saveBtn = document.getElementById('btn-save-event');
+  const newSave = saveBtn.cloneNode(true);
+  saveBtn.parentNode.replaceChild(newSave, saveBtn);
+
+  newSave.addEventListener('click', () => {
+    const from = parseInt(document.getElementById('ev-from').value);
+    const to = parseInt(document.getElementById('ev-to').value);
+
+    if (from === to) {
+      showToast('Người gây và người bị không thể là cùng 1 người');
+      return;
+    }
+
+    if (mode === 'chatHeo') {
+      const type = document.getElementById('ev-heo-type').value;
+      wizardState.events.push({ type, from, to });
+    } else if (mode === 'deHeo') {
+      const cfg = document.getElementById('ev-de-config').value;
+      if (cfg === 'dd') {
+        wizardState.events.push({ type: 'heoDen', from, to });
+        wizardState.events.push({ type: 'heoDen', from, to });
+      } else if (cfg === 'dr') {
+        wizardState.events.push({ type: 'heoDen', from, to });
+        wizardState.events.push({ type: 'heoDo',  from, to });
+      } else {
+        wizardState.events.push({ type: 'heoDo', from, to });
+        wizardState.events.push({ type: 'heoDo', from, to });
+      }
+    } else {
+      const type = document.getElementById('ev-bobai-type').value;
+      wizardState.events.push({ type, from, to });
+    }
+
+    modal.classList.remove('open');
+    renderStep3();
+    updateNextBtn();
+  });
+}
+
+// ─── Wizard navigation ────────────────────────────────────────────────────────
+
+function wizardNext() {
+  const { step, groupId, roundId } = wizardState;
+
+  if (step < 3) {
+    wizardState.step++;
+    renderWizardStep();
+    return;
+  }
+
+  // Save
+  const round = buildRound();
+  const v = validateRound(round);
+  if (!v.ok) { showToast(v.errors[0]); return; }
+
+  try {
+    if (roundId) {
+      updateRound(groupId, roundId, round);
+      showToast('Đã cập nhật ván');
+    } else {
+      const saved = addRound(groupId, round);
+      const group = getGroup(groupId);
+      showToast(`Đã lưu ván #${group.rounds.length}`);
+    }
+    location.hash = `#/group/${groupId}`;
+  } catch (e) {
+    showToast(e.message || 'Lỗi khi lưu');
+  }
+}
+
+function wizardBack() {
+  const { step, groupId } = wizardState;
+  if (step === 1) {
+    location.hash = `#/group/${groupId}`;
+    return;
+  }
+  wizardState.step--;
+  renderWizardStep();
+}
+
+// ─── Export / Import ──────────────────────────────────────────────────────────
+
+function exportData() {
+  const json = exportJSON();
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tienlen-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Đã xuất dữ liệu');
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (!confirm('Nhập dữ liệu sẽ thay thế toàn bộ dữ liệu hiện tại. Tiếp tục?')) return;
+    const result = importJSON(e.target.result);
+    if (result.ok) {
+      reloadState();
+      route();
+      showToast('Nhập dữ liệu thành công');
+    } else {
+      showToast(`Lỗi: ${result.error}`);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ─── Wiring ───────────────────────────────────────────────────────────────────
+
+function wireStaticButtons() {
+  // Home
+  document.getElementById('btn-new-group').addEventListener('click', () => {
+    document.getElementById('input-group-name').value = '';
+    [0, 1, 2, 3].forEach(i => document.getElementById(`p${i}`).value = '');
+    document.getElementById('modal-new-group').classList.add('open');
+    setTimeout(() => document.getElementById('input-group-name').focus(), 50);
+  });
+
+  document.getElementById('btn-cancel-group').addEventListener('click', () => {
+    document.getElementById('modal-new-group').classList.remove('open');
+  });
+
+  document.getElementById('btn-save-group').addEventListener('click', () => {
+    const name = document.getElementById('input-group-name').value.trim();
+    const players = [0, 1, 2, 3].map(i => document.getElementById(`p${i}`).value.trim());
+    if (!name) { showToast('Nhập tên nhóm'); return; }
+    if (players.some(p => !p)) { showToast('Nhập đủ 4 tên người chơi'); return; }
+    createGroup(name, players);
+    reloadState();
+    document.getElementById('modal-new-group').classList.remove('open');
+    renderHome();
+    showToast(`Đã tạo nhóm "${name}"`);
+  });
+
+  // Allow Enter to submit in group modal inputs
+  ['input-group-name', 'p0', 'p1', 'p2', 'p3'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('btn-save-group').click();
+    });
+  });
+
+  // Export / Import
+  document.getElementById('btn-export').addEventListener('click', exportData);
+  document.getElementById('btn-import-trigger').addEventListener('click', () => {
+    document.getElementById('file-input').value = '';
+    document.getElementById('file-input').click();
+  });
+  document.getElementById('file-input').addEventListener('change', e => {
+    if (e.target.files[0]) importData(e.target.files[0]);
+  });
+
+  // Group screen
+  document.getElementById('btn-back-group').addEventListener('click', () => {
+    location.hash = '#/';
+  });
+  document.getElementById('btn-new-round').addEventListener('click', () => {
+    location.hash = `#/group/${routeParams.groupId}/round/new`;
+  });
+  document.getElementById('btn-del-group').addEventListener('click', () => {
+    reloadState();
+    const group = state.groups.find(g => g.id === routeParams.groupId);
+    if (!group) return;
+    if (confirm(`Xóa nhóm "${group.name}"? Tất cả ván đấu sẽ bị mất.`)) {
+      deleteGroup(routeParams.groupId);
+      location.hash = '#/';
+      showToast('Đã xóa nhóm');
+    }
+  });
+
+  // Wizard nav
+  document.getElementById('btn-step-back').addEventListener('click', wizardBack);
+  document.getElementById('btn-step-next').addEventListener('click', wizardNext);
+
+  // Event modal cancel
+  document.getElementById('btn-cancel-event').addEventListener('click', () => {
+    document.getElementById('modal-event').classList.remove('open');
+  });
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  // Keyboard: Esc closes modals
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    }
+  });
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (!isAvailable()) {
+    document.getElementById('app').innerHTML = `
+      <div style="padding:40px;text-align:center;color:#c0392b">
+        <h2>⚠️ Không thể truy cập bộ nhớ trình duyệt</h2>
+        <p style="margin-top:12px">Vui lòng bật cookies/localStorage để dùng ứng dụng này.</p>
+      </div>`;
+    return;
+  }
+
+  wireStaticButtons();
+  window.addEventListener('hashchange', route);
+  route();
+});
+
+</script>
+</body>
+</html>
